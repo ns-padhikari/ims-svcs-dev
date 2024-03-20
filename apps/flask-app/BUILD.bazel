@@ -1,0 +1,31 @@
+load("@pip_parsed//:requirements.bzl", "requirement")
+load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
+load("//:requirements.bzl", "production")
+
+py_binary(
+    name = "main",
+    srcs = ["main.py"],
+    main = "main.py",
+    deps = [requirement("six")],
+    visibility = ["//visibility:public"],
+)
+
+py_wheel(
+    name = "pywheel",
+    author = "Sampath Kumar S",
+    author_email = "sampaths@netskope.com",
+    distribution = "poc",
+    homepage = "https://www.netskope.com",
+    license = "Proprietary",
+    python_tag = "py3",
+    requires = production,
+    version = "0.0.1",
+    deps = [
+        "//apps/flask-app:main",
+    ],
+)
+
+py_package(
+    name = "pypackage",
+    deps = [":pywheel"],
+)

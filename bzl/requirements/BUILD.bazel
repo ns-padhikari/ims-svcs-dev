@@ -1,0 +1,19 @@
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+filegroup(
+    name = "requirements_in",
+    srcs = ["requirements.in"],
+    visibility = ["//visibility:public"],
+)
+
+compile_pip_requirements(
+    name = "requirements",
+    timeout = "long",
+    extra_args = [
+        "--allow-unsafe",
+        "--resolver=backtracking",
+    ],
+    requirements_in = "requirements.in",
+    requirements_txt = "requirements.lock",
+    tags = ["no-coverage"],
+)
