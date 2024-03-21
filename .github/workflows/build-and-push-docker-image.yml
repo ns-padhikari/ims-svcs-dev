@@ -45,19 +45,19 @@ jobs:
           artifactory-password: ${{secrets.TEAM_ARTIFACTORY_PASSWORD}}
           twine-publish-indices: 'org-library-pypi'
 
-      - name: determine the target
-        id: metadata
-        run: |
-          TARGETS=$(bazel query 'kind(py_wheel, filter('\wheel\$', //...))')
-          ALL_TARGETS=$(tr '\n' ',' <<< "$TARGETS")
-          echo "ALL_TARGETS=${ALL_TARGETS::-1}" | tee -a $GITHUB_OUTPUT
+      #- name: determine the target
+      #  id: metadata
+      #  run: |
+      #    TARGETS=$(bazel query 'kind(py_wheel, filter('\wheel\$', //...))')
+      #    ALL_TARGETS=$(tr '\n' ',' <<< "$TARGETS")
+      #    echo "ALL_TARGETS=${ALL_TARGETS::-1}" | tee -a $GITHUB_OUTPUT
 
-      - uses: netskope/action-check-for-update@4132e57e6af7e70d51065c0eb6cf692498f06f2d # 24.83.1
-        id: check-for-changes
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          bazel-targets: ${{steps.metadata.outputs.ALL_TARGETS}}
-          force: ${{github.event.inputs.force}}
+      #- uses: netskope/action-check-for-update@4132e57e6af7e70d51065c0eb6cf692498f06f2d # 24.83.1
+      #  id: check-for-changes
+      #  with:
+      #    github-token: ${{secrets.GITHUB_TOKEN}}
+      #    bazel-targets: ${{steps.metadata.outputs.ALL_TARGETS}}
+      #    force: ${{github.event.inputs.force}}
 
       - name: build
         if: steps.check-for-changes.outputs.updated_targets != ''
