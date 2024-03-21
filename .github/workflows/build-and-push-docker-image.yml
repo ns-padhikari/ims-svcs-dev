@@ -1,0 +1,64 @@
+# IMS: Workflow for Docker CI
+
+name: IMS docker CI
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+.[0-9]+'
+      - '1.develop-*'
+  pull_request:
+    paths:
+      - '.github/workflows/build-and-push-docker-image.yml'
+      - '**/apps/flask-app/**'
+
+  workflow_call:
+    inputs:
+      branch:
+          description: "Select Development Branch"
+          type: string
+          default: ''
+      ondemand_tag:
+        description: "On Demand TAG"
+        type: string
+        default: ''
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  flask-app-docker:
+    runs-on: [self-hosted, linux, x64, rg-default, sz-S, cheap, bazel, clang, jf]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 2
+    
+      - name: setup the environment
+        uses: netskope/action-setup-environment@de1e2a3c47a8937606fa9aa8a7f5d8b33ca94c90 # v24.82.1
+        with:
+          ssh-agent-private-key: ${{secrets.BOT_SSH_PRIVATE_KEY}}
+          go-private-github-token: ${{secrets.BOT_TOKEN}}
+          jfrog-bazel-user: ${{vars.TEAM_ARTIFACTORY_USER}}
+          twine-user: ${{vars.TEAM_ARTIFACTORY_USER}}
+          artifactory-password: ${{secrets.TEAM_ARTIFACTORY_PASSWORD}}
+          twine-publish-indices: 'org-library-pypi'
+
+      - name: determine the target
+        id: metadata
+        run: |
+          TARGETS=$(bazel query 'kind(py_wheel, filter('\wheel\$', //...))')
+          ALL_TARGETS=$(tr '\n' ',' <<< "$TARGETS")
+          echo "ALL_TARGETS=${ALL_TARGETS::-1}" | tee -a $GITHUB_OUTPUT
+
+      - uses: netskope/action-check-for-update@4132e57e6af7e70d51065c0eb6cf692498f06f2d # 24.83.1
+        id: check-for-changes
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          bazel-targets: ${{steps.metadata.outputs.ALL_TARGETS}}
+          force: ${{github.event.inputs.force}}
+
+      - name: build
+        if: steps.check-for-changes.outputs.updated_targets != ''
+        run: bazel build //apps/flask-app:pywheel
